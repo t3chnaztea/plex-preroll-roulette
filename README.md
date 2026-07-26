@@ -70,6 +70,14 @@ PREROLL_FILES="/media/PreRolls/fbi.mp4,/media/PreRolls/countdown.mp4" \
 
 No external dependencies: standard-library Python 3 only.
 
+## More tiny tools for home labs
+
+Agent skills: [unifi](https://github.com/t3chnaztea/unifi-skills) · [home-assistant](https://github.com/t3chnaztea/home-assistant-skills) · [batocera](https://github.com/t3chnaztea/batocera-skills) · [psn](https://github.com/t3chnaztea/awesome-psn-skills)  
+Retro cabinet: [batocera-toolbox](https://github.com/t3chnaztea/batocera-toolbox) · [batocera-holidays](https://github.com/t3chnaztea/batocera-holidays)  
+Home server: [dell-ipmi-fan-control](https://github.com/t3chnaztea/dell-ipmi-fan-control)  
+PlayStation: [awesome-psnstats](https://github.com/t3chnaztea/awesome-psnstats)  
+Desktop: [fastfetch-macos-gradient-hud](https://github.com/t3chnaztea/fastfetch-macos-gradient-hud)
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

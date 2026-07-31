@@ -17,6 +17,15 @@ pref at one random clip or blanks it. With the default 10% odds and a 30-minute
 cron, any given movie launch has about a 1-in-10 chance of a pre-roll being
 armed. Low odds keep it a rare delight rather than a chore.
 
+One tradeoff to know about: the roll is per-interval, not per-playback. Once a
+run arms a pre-roll, every movie started before the next run gets it (and two
+movies back-to-back in the same window see the same clip). True per-movie odds
+would need a webhook listener that re-rolls the moment playback starts, the way
+[PrerollPlus](https://github.com/chadwpalm/PrerollPlus) updates its sequences.
+That means running a daemon instead of a cron line, which is against the whole
+point of this tool. If the sticky window bothers you, shorten the cron interval
+instead.
+
 ## Setup
 
 1. Drop your bumper clips into a folder the **Plex server** can see. If Plex
@@ -70,7 +79,28 @@ PREROLL_FILES="/media/PreRolls/fbi.mp4,/media/PreRolls/countdown.mp4" \
 
 No external dependencies: standard-library Python 3 only.
 
-## More tiny tools for home labs
+## How this compares
+
+There are real preroll managers out there, and if you want scheduling, a web
+UI, or a clip library, use one of them:
+
+- [NeXroll](https://github.com/JFLXCLOUD/NeXroll): the full-featured option.
+  Web UI, holiday and seasonal scheduling, sequence builder, a community
+  library of 1,700+ prerolls, Radarr/Sonarr trailer integration. Supports
+  Plex, Jellyfin, and Emby. Windows installer, Docker, Unraid.
+- [PrerollPlus](https://github.com/chadwpalm/PrerollPlus): webhook-driven.
+  Rewrites the preroll string the moment a movie starts, which gets around
+  Plex's limitation that the `,` (random) and `;` (sequential) delimiters
+  can't be combined. Web UI, holiday scheduling, Docker.
+- [plex-schedule-prerolls](https://github.com/BrianLindner/plex-schedule-prerolls):
+  a cron script like this one, but for date-based scheduling (holidays,
+  weekly/monthly rotations) via a YAML config.
+
+All three answer "which preroll plays before every movie?" This tool answers a
+different question: "does one play at all?" Every scheduler guarantees a
+preroll on every single movie, which is exactly how prerolls wear out their
+welcome. Roulette keeps the odds low so a bumper stays a surprise, and it does
+it in one stdlib-only script and one cron line. No daemon, no database, no UI.
 
 Agent skills: [unifi](https://github.com/t3chnaztea/unifi-skills) · [home-assistant](https://github.com/t3chnaztea/home-assistant-skills) · [batocera](https://github.com/t3chnaztea/batocera-skills) · [psn](https://github.com/t3chnaztea/awesome-psn-skills) · [arr-stack](https://github.com/t3chnaztea/arr-stack-skills)  
 Retro cabinet: [batocera-toolbox](https://github.com/t3chnaztea/batocera-toolbox) · [batocera-holidays](https://github.com/t3chnaztea/batocera-holidays)  

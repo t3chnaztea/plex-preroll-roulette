@@ -17,11 +17,21 @@ Configuration (all via environment variables):
                   secret has to be stored. How to find your token:
                   https://support.plex.tv/articles/204059436
 
-  Pool of clips (one of these is required). Paths must be what the Plex SERVER
-  sees (inside the container, if Plex runs in Docker):
-  PREROLL_DIR     A directory to scan for video files (non-recursive).
-  PREROLL_FILES   Comma-separated explicit list of clip paths. Takes precedence
-                  over PREROLL_DIR if both are set.
+  Pool of clips (one of these is required). The paths written to Plex must be
+  what the Plex SERVER sees (inside the container, if Plex runs in Docker):
+  PREROLL_DIR     A directory to scan for video files (non-recursive). Scanned
+                  on the host this script runs on.
+  PREROLL_PLEX_DIR  Optional. The same folder as the Plex server sees it, when
+                  that differs from PREROLL_DIR (e.g. the script runs on the
+                  Docker host and the folder is mapped into the container at
+                  another path). Clip paths are written under this directory.
+                  Default: PREROLL_DIR.
+  PREROLL_FILES   Comma-separated explicit list of clip paths, as the Plex
+                  server sees them. Takes precedence over PREROLL_DIR if both
+                  are set.
+
+  Clips whose path contains "," or ";" are skipped with a warning: Plex reads
+  those characters as list separators in the pre-roll pref and has no escape.
 
   PREROLL_ODDS    Chance (0..1) a pre-roll is active after a run. Default: 0.10
   PREROLL_LOG     Log file path. Default: stderr only.
@@ -79,20 +89,33 @@ def get_token():
 def build_pool():
     files = os.environ.get("PREROLL_FILES")
     if files:
-        return [p.strip() for p in files.split(",") if p.strip()]
+        return _usable([p.strip() for p in files.split(",") if p.strip()])
     directory = os.environ.get("PREROLL_DIR")
     if directory:
+        plex_dir = os.environ.get("PREROLL_PLEX_DIR") or directory
         try:
             names = sorted(os.listdir(directory))
         except OSError as e:
             log(f"ERROR reading PREROLL_DIR {directory}: {e}")
             return []
-        return [
-            os.path.join(directory, n)
+        return _usable([
+            os.path.join(plex_dir, n)
             for n in names
             if n.lower().endswith(VIDEO_EXTS)
-        ]
+        ])
     return []
+
+
+def _usable(paths):
+    # Plex splits the pre-roll pref on "," (sequential) and ";" (random), with
+    # no escape, so a path containing either would be read as several paths.
+    ok = []
+    for p in paths:
+        if "," in p or ";" in p:
+            log(f"WARN skipping {p}: Plex treats ',' and ';' as separators")
+        else:
+            ok.append(p)
+    return ok
 
 
 def set_preroll(token, value):
@@ -111,11 +134,14 @@ def main():
         log(f"ERROR getting token: {e}")
         sys.exit(1)
 
+    # Build and validate the pool on every run, not just winning rolls, so a
+    # bad config fails loudly right away instead of ~ODDS of the time.
+    pool = build_pool()
+    if not pool:
+        log("ERROR no pre-roll clips found (set PREROLL_DIR or PREROLL_FILES)")
+        sys.exit(1)
+
     if random.random() < ODDS:
-        pool = build_pool()
-        if not pool:
-            log("ERROR no pre-roll clips found (set PREROLL_DIR or PREROLL_FILES)")
-            sys.exit(1)
         choice = random.choice(pool)
         action = choice
     else:

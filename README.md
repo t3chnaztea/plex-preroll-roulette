@@ -29,8 +29,10 @@ instead.
 ## Setup
 
 1. Drop your bumper clips into a folder the **Plex server** can see. If Plex
-   runs in Docker, that's the path *inside* the container (e.g. a `PreRolls`
-   folder mapped into `/media`).
+   runs in Docker, the path written to Plex must be the one *inside* the
+   container (e.g. a `PreRolls` folder mapped into `/media`). If the script
+   runs on the Docker host, set `PREROLL_DIR` to the host path and
+   `PREROLL_PLEX_DIR` to the container path (see Usage).
 2. Get a Plex token: https://support.plex.tv/articles/204059436 (or use the
    Docker fallback below).
 3. Schedule the script (cron example below).
@@ -43,10 +45,15 @@ All via environment variables:
 |-----------------|-----------------------------|-------|
 | `PLEX_URL`      | `http://localhost:32400`    | Plex base URL. |
 | `PLEX_TOKEN`    | _(unset)_                   | Plex auth token. If unset, falls back to reading it live from a Docker container (see below). |
-| `PREROLL_DIR`   | _(unset)_                   | Folder to scan for video clips (non-recursive). Paths are what the **Plex server** sees. |
-| `PREROLL_FILES` | _(unset)_                   | Comma-separated explicit clip list. Takes precedence over `PREROLL_DIR`. |
+| `PREROLL_DIR`   | _(unset)_                   | Folder to scan for video clips (non-recursive), on the host the script runs on. |
+| `PREROLL_PLEX_DIR` | `PREROLL_DIR`            | The same folder as the **Plex server** sees it, if different (script on the Docker host, Plex in a container). Clip paths sent to Plex use this directory. |
+| `PREROLL_FILES` | _(unset)_                   | Comma-separated explicit clip list, as the **Plex server** sees the paths. Takes precedence over `PREROLL_DIR`. |
 | `PREROLL_ODDS`  | `0.10`                      | Chance (0..1) a pre-roll is armed after a run. |
 | `PREROLL_LOG`   | _(unset)_                   | Optional log file; always logs to stderr too. |
+
+Clips whose path contains `,` or `;` are skipped with a warning. Plex reads
+both as list separators in the pre-roll setting and has no way to escape them,
+so rename those files.
 
 Docker token fallback (only used when `PLEX_TOKEN` is unset):
 
@@ -61,8 +68,10 @@ Docker token fallback (only used when `PLEX_TOKEN` is unset):
 # Explicit token + a folder of clips
 PLEX_TOKEN=xxxxxxxx PREROLL_DIR=/media/PreRolls ./plex-preroll-roulette.py
 
-# Docker host: let it read the token from the running container
-PLEX_CONTAINER=plex PREROLL_DIR=/media/PreRolls ./plex-preroll-roulette.py
+# Docker host: let it read the token from the running container. The host
+# folder /srv/plex/PreRolls is mapped into the container at /media/PreRolls.
+PLEX_CONTAINER=plex PREROLL_DIR=/srv/plex/PreRolls \
+  PREROLL_PLEX_DIR=/media/PreRolls ./plex-preroll-roulette.py
 
 # Explicit clip list, 25% odds, with a log file
 PREROLL_FILES="/media/PreRolls/fbi.mp4,/media/PreRolls/countdown.mp4" \
